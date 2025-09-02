@@ -1,0 +1,84 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Simulation parameters
+time = np.linspace(0, 3600, 3601)  # 1-hour simulation at 1-second intervals
+delta_t = 1  # Time step (s)
+
+# Battery parameters
+capacity_nominal = 2.0  # Ah
+voltage_nominal = 3.7  # V
+resistance_internal = 0.05  # Ohms
+temp_ambient = 25  # °C
+
+# Initial states
+soc = 1.0  # 100% SOC
+soh = 1.0  # 100% SOH
+temp = temp_ambient  # °C
+
+# Placeholder for results
+SOC = []
+SOH = []
+TEMP = []
+VOLT = []
+
+# Simulated current profile (e.g., sinusoidal load)
+current_profile = 1.0 * np.sin(2 * np.pi * time / 3600)  # 1A peak
+
+# Simulation loop
+for i in range(len(time)):
+    current = current_profile[i]
+    
+    # SOC estimation using Coulomb Counting
+    soc -= (current * delta_t) / (capacity_nominal * 3600)
+    soc = np.clip(soc, 0, 1)
+
+    # SOH estimation (simplified: degrades linearly over time)
+    soh -= 1e-6  # degrade slowly
+    soh = max(0.8, soh)  # assume 80% is end-of-life threshold
+
+    # Voltage estimation (V = V_nom - I * R_internal)
+    voltage = voltage_nominal - current * resistance_internal
+
+    # Temperature increase (simplified heat model)
+    heat_generated = (current ** 2) * resistance_internal
+    temp += (heat_generated * delta_t) / 100  # arbitrary thermal capacity
+
+    # Cooling (simple convection model)
+    temp -= 0.01 * (temp - temp_ambient)
+
+    # Store results
+    SOC.append(soc)
+    SOH.append(soh)
+    VOLT.append(voltage)
+    TEMP.append(temp)
+
+# Plot results
+plt.figure(figsize=(12, 8))
+
+plt.subplot(2, 2, 1)
+plt.plot(time, SOC)
+plt.title("State of Charge (SOC)")
+plt.xlabel("Time (s)")
+plt.ylabel("SOC")
+
+plt.subplot(2, 2, 2)
+plt.plot(time, SOH)
+plt.title("State of Health (SOH)")
+plt.xlabel("Time (s)")
+plt.ylabel("SOH")
+
+plt.subplot(2, 2, 3)
+plt.plot(time, TEMP)
+plt.title("Battery Temperature")
+plt.xlabel("Time (s)")
+plt.ylabel("Temperature (°C)")
+
+plt.subplot(2, 2, 4)
+plt.plot(time, VOLT)
+plt.title("Terminal Voltage")
+plt.xlabel("Time (s)")
+plt.ylabel("Voltage (V)")
+
+plt.tight_layout()
+plt.show()

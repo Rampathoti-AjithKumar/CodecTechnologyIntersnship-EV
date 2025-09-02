@@ -1,2 +1,0 @@
-# CodecTechnologyIntersnship-EV
-Internship
